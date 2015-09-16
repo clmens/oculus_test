@@ -3,8 +3,8 @@
 bool show_demo = false;
 bool show_particle = true;
 bool color_on = true;
-
 bool show_grid = true;
+bool show_port = true;
 
 /*
  TODO:
@@ -63,8 +63,10 @@ void ofApp::setup()
         demos.push_back(d);
     }
     
-    
-    
+    //osc
+    cout << "listening for osc messages on port " << PORT << "\n";
+    receiver.setup(PORT);
+    current_msg_string = 0;
     
     //enable mouse;
     cam.begin();
@@ -93,6 +95,55 @@ void ofApp::spawn_particle(int x, int y, int z, int num, float hue)
 //--------------------------------------------------------------
 void ofApp::update()
 {
+    //osc
+    // hide old messages
+    for (int i= 0; i < NUM_MSG_STRINGS; i++) {
+        if (timers[i] < ofGetElapsedTimef()) {
+            msg_strings[i] = "";
+        }
+    }
+    
+    //check for waiting messages
+    while (receiver.hasWaitingMessages()){
+        // get the next message
+        ofxOscMessage m;
+        receiver.getNextMessage(&m);
+        
+        //check for incoming messages
+        if (m.getAddress() == "/AF3") {
+            string msg_string;
+            msg_string = m.getAddress();
+            msg_string += ": ";
+            
+            for (int i = 0; i < m.getNumArgs(); i++) {
+                msg_string += m.getArgTypeName(i);
+                msg_string += ":";
+                
+                if(m.getArgType(i) == OFXOSC_TYPE_INT32)  {
+                    msg_string += ofToString(m.getArgAsInt32(i));
+                }
+                
+                else if (m.getArgType(i) == OFXOSC_TYPE_FLOAT){
+                    msg_string += ofToString(m.getArgAsFloat(i));
+                }
+                else if (m.getArgType(i) == OFXOSC_TYPE_STRING){
+                    msg_string += m.getArgAsString(i);
+                }
+                else{
+                    msg_string += "sensors";
+                }
+            }
+            
+            // add to the list of strings to display
+            msg_strings[current_msg_string] = msg_string;
+            timers[current_msg_string] = ofGetElapsedTimef() + 5.0f;
+            current_msg_string = (current_msg_string + 1) % NUM_MSG_STRINGS;
+            // clear the next line
+            msg_strings[current_msg_string] = "";
+        }
+    }
+    
+    //particle
     spawn_particle(-175, 0, 0, 10, 0);
     spawn_particle(-125, 0, 0, 10, 40);
     spawn_particle( -25, 0, 0, 10, 80);
@@ -104,8 +155,7 @@ void ofApp::update()
     //magically enable mouserotation
     oculusRift.worldToScreen(ofVec3f(), true);
     
-    
-    
+    //demo
     if (show_demo)
     {
         for(int i = 0; i < demos.size(); i++){
@@ -158,6 +208,11 @@ void ofApp::draw()
             ofDrawBitmapString(ofToString(ofGetFrameRate(), 4) + "fps", 10, 20);
             ofDrawBitmapString("particle num = " + ofToString(vboPartciles->numParticles) + "\nPredictive Tracking " + (oculusRift.getUsePredictiveOrientation() ? "YES" : "NO"), 10, 35);
             ofDrawBitmapString("[f] key : toggle fullscreen", 10, 60);
+            if (show_port) {
+                string buf;
+                buf = "listening for osc messages on port" + ofToString(PORT);
+                ofDrawBitmapString(buf, 10, 80);
+            }
             
             ofSetColor(0, 255, 0);
             ofNoFill();

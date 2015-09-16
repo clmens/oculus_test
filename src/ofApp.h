@@ -3,6 +3,12 @@
 #include "ofMain.h"
 #include "ofxOculusDK2.h"
 #include "ofxVboParticles.h"
+#include "ofxOsc.h"
+
+
+// listen on port 57110
+#define PORT 57110
+#define NUM_MSG_STRINGS 20
 
 typedef struct{
 	ofColor color;
@@ -38,8 +44,6 @@ class ofApp : public ofBaseApp
 	ofLight				light;
 	ofEasyCam			cam;
     
-    ofxVboParticles *vboPartciles;
-    
 	bool showOverlay;
 	bool predictive;
 	vector<DemoSphere> demos;
@@ -52,6 +56,16 @@ class ofApp : public ofBaseApp
     
     ofVec3f cursorGaze;
     
-    
+    //particle
     void spawn_particle(int x, int y, int z, int num, float hue);
+    ofxVboParticles *vboPartciles;
+    
+    //osc
+    ofTrueTypeFont font;
+    ofxOscReceiver receiver;
+    
+    int current_msg_string;
+    string msg_strings[NUM_MSG_STRINGS];
+    float timers[NUM_MSG_STRINGS];
+
 };
