@@ -5,11 +5,6 @@
 #include "ofxVboParticles.h"
 #include "ofxOsc.h"
 
-
-// listen on port 57110
-#define PORT 57110
-#define NUM_MSG_STRINGS 20
-
 typedef struct{
 	ofColor color;
 	ofVec3f pos;
@@ -46,7 +41,6 @@ class ofApp : public ofBaseApp
     
 	bool showOverlay;
 	bool predictive;
-	vector<DemoSphere> demos;
     
     ofVec3f cursor2D;
     ofVec3f cursor3D;
@@ -56,6 +50,9 @@ class ofApp : public ofBaseApp
     
     ofVec3f cursorGaze;
     
+    //sensor    
+    vector<string> sensorList;
+    
     //particle
     void spawn_particle(int x, int y, int z, int num, float hue);
     ofxVboParticles *vboPartciles;
@@ -64,8 +61,11 @@ class ofApp : public ofBaseApp
     ofTrueTypeFont font;
     ofxOscReceiver receiver;
     
+    float parseMessage(ofxOscMessage & msg);
+    
+    
+    
     int current_msg_string;
-    string msg_strings[NUM_MSG_STRINGS];
-    float timers[NUM_MSG_STRINGS];
-
+    
+    void get_osc_messages();
 };

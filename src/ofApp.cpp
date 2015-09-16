@@ -1,10 +1,11 @@
 #include "ofApp.h"
 
-bool show_demo = false;
 bool show_particle = true;
 bool color_on = true;
 bool show_grid = true;
 bool show_port = true;
+
+int osc_port = 57110;
 
 /*
  TODO:
@@ -42,30 +43,9 @@ void ofApp::setup()
     oculusRift.baseCamera = &cam;
     oculusRift.setup();
     
-    
-    
-    for(int i = 0; i < 20; i++){
-        DemoSphere d;
-        d.color = ofColor(ofRandom(255),
-                          ofRandom(255),
-                          ofRandom(255));
-        
-        d.pos = ofVec3f(ofRandom(-500, 500),0,ofRandom(-500,500));
-        
-        d.floatPos.x = d.pos.x;
-        d.floatPos.z = d.pos.z;
-        
-        d.radius = ofRandom(2, 50);
-        
-        d.bMouseOver = false;
-        d.bGazeOver  = false;
-        
-        demos.push_back(d);
-    }
-    
     //osc
-    cout << "listening for osc messages on port " << PORT << "\n";
-    receiver.setup(PORT);
+    cout << "listening for osc messages on port " << osc_port << "\n";
+    receiver.setup(osc_port);
     current_msg_string = 0;
     
     //enable mouse;
@@ -73,36 +53,22 @@ void ofApp::setup()
     cam.end();
 }
 
-void ofApp::spawn_particle(int x, int y, int z, int num, float hue)
+float ofApp::parseMessage(ofxOscMessage &msg)
 {
-    for (int i = 0; i < num; i++)
-    {
-        ofVec3f position = ofVec3f(ofRandom(-50, 50), ofRandom(-200, 200), 100);
-        ofVec3f velocity = ofVec3f(0, 0, -2);
-        ofColor color;
-        int sat;
-        if(color_on) sat = 200;
-        else sat = 0;
-        color.setHsb(hue, sat, 255);
-        
-        position += ofVec3f( x , y, z);
-        // add a particle
-        vboPartciles->addParticle(position, velocity, color);
-    }
 }
 
 
-//--------------------------------------------------------------
-void ofApp::update()
+void ofApp::get_osc_messages()
 {
     //osc
+    /*
     // hide old messages
     for (int i= 0; i < NUM_MSG_STRINGS; i++) {
         if (timers[i] < ofGetElapsedTimef()) {
             msg_strings[i] = "";
         }
     }
-    
+    */
     //check for waiting messages
     while (receiver.hasWaitingMessages()){
         // get the next message
@@ -133,16 +99,32 @@ void ofApp::update()
                     msg_string += "sensors";
                 }
             }
-            
-            // add to the list of strings to display
-            msg_strings[current_msg_string] = msg_string;
-            timers[current_msg_string] = ofGetElapsedTimef() + 5.0f;
-            current_msg_string = (current_msg_string + 1) % NUM_MSG_STRINGS;
-            // clear the next line
-            msg_strings[current_msg_string] = "";
         }
     }
-    
+}
+
+void ofApp::spawn_particle(int x, int y, int z, int num, float hue)
+{
+    for (int i = 0; i < num; i++)
+    {
+        ofVec3f position = ofVec3f(ofRandom(-50, 50), ofRandom(-200, 200), 100);
+        ofVec3f velocity = ofVec3f(0, 0, -2);
+        ofColor color;
+        int sat;
+        if(color_on) sat = 200;
+        else sat = 0;
+        color.setHsb(hue, sat, 255);
+        
+        position += ofVec3f( x , y, z);
+        // add a particle
+        vboPartciles->addParticle(position, velocity, color);
+    }
+}
+
+
+//--------------------------------------------------------------
+void ofApp::update()
+{
     //particle
     spawn_particle(-175, 0, 0, 10, 0);
     spawn_particle(-125, 0, 0, 10, 40);
@@ -154,33 +136,6 @@ void ofApp::update()
     vboPartciles->update();
     //magically enable mouserotation
     oculusRift.worldToScreen(ofVec3f(), true);
-    
-    //demo
-    if (show_demo)
-    {
-        for(int i = 0; i < demos.size(); i++){
-            demos[i].floatPos.y = ofSignedNoise(ofGetElapsedTimef()/10.0,
-                                                demos[i].pos.x/100.0,
-                                                demos[i].pos.z/100.0,
-                                                demos[i].radius*100.0) * demos[i].radius*20.;
-            
-        }
-        
-        
-        if(oculusRift.isSetup()){
-            ofRectangle viewport = oculusRift.getOculusViewport();
-            for(int i = 0; i < demos.size(); i++){
-                // mouse selection
-                float mouseDist = oculusRift.distanceFromMouse(demos[i].floatPos);
-                demos[i].bMouseOver = (mouseDist < 50);
-                
-                // gaze selection
-                ofVec3f screenPos = oculusRift.worldToScreen(demos[i].floatPos, true);
-                float gazeDist = ofDist(screenPos.x, screenPos.y, viewport.getCenter().x, viewport.getCenter().y);
-                demos[i].bGazeOver = (gazeDist < 25);
-            }
-        }
-    }
 }
 
 
@@ -210,7 +165,7 @@ void ofApp::draw()
             ofDrawBitmapString("[f] key : toggle fullscreen", 10, 60);
             if (show_port) {
                 string buf;
-                buf = "listening for osc messages on port" + ofToString(PORT);
+                buf = "listening for osc messages on port" + ofToString(osc_port);
                 ofDrawBitmapString(buf, 10, 80);
             }
             
@@ -272,30 +227,6 @@ void ofApp::drawScene()
         
         //cam.end();
     }
-    
-    if (show_demo)
-    {
-        
-        for(int i = 0; i < demos.size(); i++){
-            ofPushMatrix();
-            //		ofRotate(ofGetElapsedTimef()*(50-demos[i].radius), 0, 1, 0);
-            ofTranslate(demos[i].floatPos);
-            //		ofRotate(ofGetElapsedTimef()*4*(50-demos[i].radius), 0, 1, 0);
-            
-            if (demos[i].bMouseOver)
-                ofSetColor(ofColor::white.getLerped(ofColor::red, sin(ofGetElapsedTimef()*10.0)*.5+.5));
-            else if (demos[i].bGazeOver)
-                ofSetColor(ofColor::white.getLerped(ofColor::green, sin(ofGetElapsedTimef()*10.0)*.5+.5));
-            else
-                ofSetColor(demos[i].color);
-            
-            ofSphere(demos[i].radius);
-            ofPopMatrix();
-        }
-    }
-    
-    
-    
     
     //billboard and draw the mouse
     if(oculusRift.isSetup()){
@@ -362,10 +293,6 @@ void ofApp::keyPressed(int key)
     if(key == '1')
     {
         show_particle= !show_particle;
-    }
-    if(key == '2')
-    {
-        show_demo= !show_demo;
     }
 }
 

@@ -22,13 +22,13 @@ ofxVboParticles::ofxVboParticles(int _maxParticles, float _pointSize){
     glPointParameterfv(GL_POINT_DISTANCE_ATTENUATION, distance);
     glPointSize(pointSize);
     
+    /*
     ofDisableArbTex();
     texture.loadImage("Textures/Soft64.png");
     ofEnableArbTex();
     
     billboards.addTexCoord(ofVec2f(0.0,1.0));
     
-    /*
     ofPrimitiveMode primitiveMode = OF_PRIMITIVE_POINTS;
     ofSpherePrimitive sphere(100.0, 100);
     ofMesh tmpMesh;
