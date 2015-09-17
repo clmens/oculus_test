@@ -45,6 +45,9 @@ void ofApp::setup()
     tileHeight = 600.0;
     arcAngle = 180.0;
     distanceTiles= 600.0;
+    
+    particleSpread = 5.0;
+    particleSpeed = 10.0;
 
     ofLog()<<"sensorList size:"<< sensorList.size();
     ofLog()<<"particleTiles size:"<< particleTiles.size();
@@ -126,7 +129,7 @@ void ofApp::spawn_particles(float reading, ofColor color, ofxVboParticles *parti
         //mapping Sensorreadings to Spawningpoint in VR
         float y = ofMap(reading, 0.0, 800.0, -tileHeight, tileHeight);
         ofVec3f position = ofVec3f(ofRandom(-tileWidth, tileWidth), y, 0.0);
-        ofVec3f velocity = ofVec3f(ofRandom(-5,5), 0, 10);
+        ofVec3f velocity = ofVec3f(ofRandom(-particleSpread, -particleSpread), 0, particleSpeed);
         // add a particle
         particleTile->addParticle(position, velocity, color);
     }

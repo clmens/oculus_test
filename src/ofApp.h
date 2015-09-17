@@ -71,6 +71,9 @@ public:
     float arcAngle;
     float distanceTiles;
     
+    float particleSpread;
+    float particleSpeed;
+    
     //osc
     ofTrueTypeFont font;
     ofxOscReceiver receiver;
