@@ -35,16 +35,16 @@ void ofApp::setup()
 
     for (int i = 0; i < sensorList.size(); i++)
     {
-        vboParticles = new ofxVboParticles(5000, 2000);
+        vboParticles = new ofxVboParticles(10000, 5000);
         vboParticles->friction = 0.00;
-        vboParticles->fade = 0.999;
+        vboParticles->fade = 0.99;
         particleTiles.push_back(vboParticles);
     }
     
-    tileWidth = 200.0;
-    tileHeight = 400.0;
-    arcAngle = 270.0;
-    distanceTiles= 400.0;
+    tileWidth = 400.0;
+    tileHeight = 600.0;
+    arcAngle = 180.0;
+    distanceTiles= 600.0;
 
     ofLog()<<"sensorList size:"<< sensorList.size();
     ofLog()<<"particleTiles size:"<< particleTiles.size();
@@ -126,7 +126,7 @@ void ofApp::spawn_particles(float reading, ofColor color, ofxVboParticles *parti
         //mapping Sensorreadings to Spawningpoint in VR
         float y = ofMap(reading, 0.0, 800.0, -tileHeight, tileHeight);
         ofVec3f position = ofVec3f(ofRandom(-tileWidth, tileWidth), y, 0.0);
-        ofVec3f velocity = ofVec3f(0, 0, 2);
+        ofVec3f velocity = ofVec3f(ofRandom(-5,5), 0, 10);
         // add a particle
         particleTile->addParticle(position, velocity, color);
     }
@@ -148,6 +148,7 @@ void ofApp::update()
     {
         ofColor color(255,0,255);
         color.setHue((255/particleTiles.size())*i);
+        if(!color_on) color.setSaturation(0);
         spawn_particles(sensorReading[i], color, particleTiles[i]);
     }
 
@@ -184,14 +185,15 @@ void ofApp::drawScene()
         for (int i = 0; i < particleTiles.size(); i++)
         {
             int numTiles = particleTiles.size();
-            float angleStep = 180/numTiles;
+            float angleStep = arcAngle/numTiles;
             
             float angle = angleStep * i;
-            float posX = -(1.5 * tileWidth * numTiles)/2 + 1.5 * tileWidth * i;
-            ofVec3f pos(sin(i*PI/numTiles)*distanceTiles, 0.0, cos(i*PI/numTiles)*distanceTiles);
+            //float posX = -(1.5 * tileWidth * numTiles)/2 + 1.5 * tileWidth * i;
+            ofVec3f pos(sin(i*ofDegToRad(angleStep))*distanceTiles, 0.0, cos(i*ofDegToRad(angleStep))*distanceTiles);
             
             ofPushMatrix();
-            ofRotateY(90+angleStep/2);
+            //look into the arc
+            ofRotateY(180-arcAngle/2+angleStep/2);
             ofPushMatrix();
             ofTranslate(pos);
             ofRotateY(angle);
