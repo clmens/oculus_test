@@ -12,6 +12,7 @@ ofxVboParticles::ofxVboParticles(int _maxParticles, float _pointSize){
     pointSize = _pointSize;
     numParticles = 0;
     friction = 0.01;
+    fade = 0.0001;
     
     positions = boost::circular_buffer<ofVec3f>(maxParticles);
     velocitys = boost::circular_buffer<ofVec3f>(maxParticles);
@@ -22,22 +23,6 @@ ofxVboParticles::ofxVboParticles(int _maxParticles, float _pointSize){
     glPointParameterfv(GL_POINT_DISTANCE_ATTENUATION, distance);
     glPointSize(pointSize);
     
-    /*
-    ofDisableArbTex();
-    texture.loadImage("Textures/Soft64.png");
-    ofEnableArbTex();
-    
-    billboards.addTexCoord(ofVec2f(0.0,1.0));
-    
-    ofPrimitiveMode primitiveMode = OF_PRIMITIVE_POINTS;
-    ofSpherePrimitive sphere(100.0, 100);
-    ofMesh tmpMesh;
-    tmpMesh = sphere.getMesh();
-    billboards.append(tmpMesh);
-    
-    billboards.setUsage(GL_STATIC_DRAW);
-    billboards.setMode(primitiveMode);
-    */
     billboards.setUsage(GL_DYNAMIC_DRAW);
     billboards.setMode(OF_PRIMITIVE_POINTS);
     billboards.disableTextures();
@@ -48,12 +33,17 @@ ofxVboParticles::ofxVboParticles(int _maxParticles, float _pointSize){
 }
 
 void ofxVboParticles::update(){
+    
+    float tmp;
+    
     for(int i = 0; i < positions.size(); i++){
         forces[i] = ofVec3f(0, 0, 0);
         forces[i] -= velocitys[i] * friction;
         velocitys[i] += forces[i];
         positions[i] += velocitys[i];
+        colors[i].setBrightness(colors[i].getBrightness()*fade);
         billboards.getVertices()[i].set(positions[i].x, positions[i].y, positions[i].z);
+        billboards.getColors()[i].set(colors[i]);
     }
     
 }

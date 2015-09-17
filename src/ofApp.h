@@ -42,6 +42,13 @@ class ofApp : public ofBaseApp
 	bool showOverlay;
 	bool predictive;
     
+    bool show_particle;
+    bool color_on;
+    bool show_grid;
+    bool show_port;
+    
+    int osc_port;
+    
     ofVec3f cursor2D;
     ofVec3f cursor3D;
     
@@ -56,6 +63,8 @@ class ofApp : public ofBaseApp
     //particle
     void spawn_particle(int x, int y, int z, int num, float hue);
     ofxVboParticles *vboPartciles;
+    
+    void generate_particle_tiles(ofxOscMessage msg);
     
     //osc
     ofTrueTypeFont font;

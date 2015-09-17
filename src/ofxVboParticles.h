@@ -22,18 +22,16 @@ public:
     float pointSize;
 
     int numParticles;
-#if true
+    
     boost::circular_buffer<ofVec3f> positions;
     boost::circular_buffer<ofVec3f> velocitys;
     boost::circular_buffer<ofVec3f> forces;
     boost::circular_buffer<ofColor> colors;
-#else
-    deque<ofVec3f> positions;
-    deque<ofVec3f> velocitys;
-    deque<ofVec3f> forces;
-    deque<ofColor> colors;
-#endif
+    
+    ofFloatColor alpha;
+
     float friction;
+    float fade;
     
     ofShader billboardShader;
     ofImage texture;

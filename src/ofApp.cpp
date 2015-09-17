@@ -1,12 +1,5 @@
 #include "ofApp.h"
 
-bool show_particle = true;
-bool color_on = true;
-bool show_grid = true;
-bool show_port = true;
-
-int osc_port = 57110;
-
 /*
  TODO:
  
@@ -27,21 +20,26 @@ void ofApp::setup()
     ofEnableBlendMode(OF_BLENDMODE_ADD);
     cam.setFov(80);
     
+    oculusRift.baseCamera = &cam;
+    oculusRift.setup();
+    ofHideCursor();
+    
     // ofxVboParticles([max particle number], [particle size]);
     vboPartciles = new ofxVboParticles(60000, 2000);
-    
     // set friction (0.0 - 1.0);
     vboPartciles->friction = 0.00;
+    vboPartciles->fade = 0.99;
     
-    //    ofSetWindowPosition(1920, 0);
-    //    ofToggleFullscreen();
+    show_particle = true;
+    color_on = true;
+    show_grid = true;
+    show_port = true;
+    osc_port = 57110;
+    
     showOverlay = false;
     predictive = true;
     
-    ofHideCursor();
-    
-    oculusRift.baseCamera = &cam;
-    oculusRift.setup();
+    sensorList = {"AF3", "AB2"};
     
     //osc
     cout << "listening for osc messages on port " << osc_port << "\n";
@@ -62,18 +60,19 @@ void ofApp::get_osc_messages()
 {
     //osc
     /*
-    // hide old messages
-    for (int i= 0; i < NUM_MSG_STRINGS; i++) {
-        if (timers[i] < ofGetElapsedTimef()) {
-            msg_strings[i] = "";
-        }
-    }
-    */
+     // hide old messages
+     for (int i= 0; i < NUM_MSG_STRINGS; i++) {
+     if (timers[i] < ofGetElapsedTimef()) {
+     msg_strings[i] = "";
+     }
+     }
+     */
     //check for waiting messages
     while (receiver.hasWaitingMessages()){
         // get the next message
         ofxOscMessage m;
         receiver.getNextMessage(&m);
+        generate_particle_tiles(m);
         
         //check for incoming messages
         if (m.getAddress() == "/AF3") {
@@ -103,6 +102,25 @@ void ofApp::get_osc_messages()
     }
 }
 
+void ofApp::generate_particle_tiles(ofxOscMessage msg)
+{
+    int x_offset = -25 - sensorList.size()/2;
+    
+    for(int i = 0; i < sensorList.size(); i++)
+    {
+        if(msg.getAddress() == sensorList[i])
+        {
+            for (int arg = 0; arg < msg.getNumArgs(); arg++)
+            {
+                int reading = msg.getArgAsInt(arg);
+                int x_pos = x_offset + i * 50;
+                spawn_particle(x_pos, reading, 0, 10, i * 40);
+            }
+        }
+    }
+    
+}
+
 void ofApp::spawn_particle(int x, int y, int z, int num, float hue)
 {
     for (int i = 0; i < num; i++)
@@ -125,6 +143,7 @@ void ofApp::spawn_particle(int x, int y, int z, int num, float hue)
 //--------------------------------------------------------------
 void ofApp::update()
 {
+    
     //particle
     spawn_particle(-175, 0, 0, 10, 0);
     spawn_particle(-125, 0, 0, 10, 40);
@@ -132,10 +151,12 @@ void ofApp::update()
     spawn_particle(  25, 0, 0, 10, 120);
     spawn_particle( 125, 0, 0, 10, 160);
     spawn_particle( 175, 0, 0, 10, 220);
-
+    
+    
     vboPartciles->update();
     //magically enable mouserotation
     oculusRift.worldToScreen(ofVec3f(), true);
+
 }
 
 
