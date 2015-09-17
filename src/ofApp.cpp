@@ -7,6 +7,7 @@
  relate Particles to OSC data
  Add Particle behaviour i.e. fade out with time, camera distance
  Add Particle Tile that uses specific Sensordata and spawns Particles
+ Fix Camera reposition viewpoint
  
  */
 
@@ -22,13 +23,31 @@ void ofApp::setup()
     
     oculusRift.baseCamera = &cam;
     oculusRift.setup();
+    
     ofHideCursor();
     
+    sensorList = {"AF3", "AB2", "bla", "bla", "bla", "bla"};
+    sensorReading = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+    
     // ofxVboParticles([max particle number], [particle size]);
-    vboPartciles = new ofxVboParticles(60000, 2000);
+    //vboParticles = new ofxVboParticles(60000, 2000);
     // set friction (0.0 - 1.0);
-    vboPartciles->friction = 0.00;
-    vboPartciles->fade = 0.99;
+
+    for (int i = 0; i < sensorList.size(); i++)
+    {
+        vboParticles = new ofxVboParticles(5000, 2000);
+        vboParticles->friction = 0.00;
+        vboParticles->fade = 0.999;
+        particleTiles.push_back(vboParticles);
+    }
+    
+    tileWidth = 200.0;
+    tileHeight = 400.0;
+    arcAngle = 270.0;
+    distanceTiles= 400.0;
+
+    ofLog()<<"sensorList size:"<< sensorList.size();
+    ofLog()<<"particleTiles size:"<< particleTiles.size();
     
     show_particle = true;
     color_on = true;
@@ -39,16 +58,14 @@ void ofApp::setup()
     showOverlay = false;
     predictive = true;
     
-    sensorList = {"AF3", "AB2"};
-    
     //osc
     cout << "listening for osc messages on port " << osc_port << "\n";
     receiver.setup(osc_port);
     current_msg_string = 0;
     
     //enable mouse;
-    cam.begin();
-    cam.end();
+    //cam.begin();
+    //cam.end();
 }
 
 float ofApp::parseMessage(ofxOscMessage &msg)
@@ -72,7 +89,6 @@ void ofApp::get_osc_messages()
         // get the next message
         ofxOscMessage m;
         receiver.getNextMessage(&m);
-        generate_particle_tiles(m);
         
         //check for incoming messages
         if (m.getAddress() == "/AF3") {
@@ -102,40 +118,17 @@ void ofApp::get_osc_messages()
     }
 }
 
-void ofApp::generate_particle_tiles(ofxOscMessage msg)
+void ofApp::spawn_particles(float reading, ofColor color, ofxVboParticles *particleTile)
 {
-    int x_offset = -25 - sensorList.size()/2;
-    
-    for(int i = 0; i < sensorList.size(); i++)
+    int numParticlesSpawned = 10;
+    for (int i = 0; i < numParticlesSpawned; i++)
     {
-        if(msg.getAddress() == sensorList[i])
-        {
-            for (int arg = 0; arg < msg.getNumArgs(); arg++)
-            {
-                int reading = msg.getArgAsInt(arg);
-                int x_pos = x_offset + i * 50;
-                spawn_particle(x_pos, reading, 0, 10, i * 40);
-            }
-        }
-    }
-    
-}
-
-void ofApp::spawn_particle(int x, int y, int z, int num, float hue)
-{
-    for (int i = 0; i < num; i++)
-    {
-        ofVec3f position = ofVec3f(ofRandom(-50, 50), ofRandom(-200, 200), 100);
-        ofVec3f velocity = ofVec3f(0, 0, -2);
-        ofColor color;
-        int sat;
-        if(color_on) sat = 200;
-        else sat = 0;
-        color.setHsb(hue, sat, 255);
-        
-        position += ofVec3f( x , y, z);
+        //mapping Sensorreadings to Spawningpoint in VR
+        float y = ofMap(reading, 0.0, 800.0, -tileHeight, tileHeight);
+        ofVec3f position = ofVec3f(ofRandom(-tileWidth, tileWidth), y, 0.0);
+        ofVec3f velocity = ofVec3f(0, 0, 2);
         // add a particle
-        vboPartciles->addParticle(position, velocity, color);
+        particleTile->addParticle(position, velocity, color);
     }
 }
 
@@ -143,82 +136,29 @@ void ofApp::spawn_particle(int x, int y, int z, int num, float hue)
 //--------------------------------------------------------------
 void ofApp::update()
 {
+    for (int i = 0; i < sensorList.size(); i++)
+    {
+        sensorReading[i] = ofRandom(800.0);
+        //ofLog()<<"Sensor"<<i<<":"<< sensorReading[i];
+    }
     
     //particle
-    spawn_particle(-175, 0, 0, 10, 0);
-    spawn_particle(-125, 0, 0, 10, 40);
-    spawn_particle( -25, 0, 0, 10, 80);
-    spawn_particle(  25, 0, 0, 10, 120);
-    spawn_particle( 125, 0, 0, 10, 160);
-    spawn_particle( 175, 0, 0, 10, 220);
     
+    for (int i = 0; i < particleTiles.size(); i++)
+    {
+        ofColor color(255,0,255);
+        color.setHue((255/particleTiles.size())*i);
+        spawn_particles(sensorReading[i], color, particleTiles[i]);
+    }
+
+    for( auto tile: particleTiles)
+    {
+        tile->update();
+    }
     
-    vboPartciles->update();
+    //vboPartciles->update();
     //magically enable mouserotation
-    oculusRift.worldToScreen(ofVec3f(), true);
-
-}
-
-
-//--------------------------------------------------------------
-void ofApp::draw()
-{
-    
-    
-    if(oculusRift.isSetup()){
-        
-        if(showOverlay){
-            
-            oculusRift.beginOverlay(-230, 320,240);
-            ofRectangle overlayRect = oculusRift.getOverlayRectangle();
-            
-            ofPushStyle();
-            ofEnableAlphaBlending();
-            ofFill();
-            ofSetColor(255, 40, 10, 200);
-            
-            ofRect(overlayRect);
-            
-            ofSetColor(255,255);
-            ofFill();
-            ofDrawBitmapString(ofToString(ofGetFrameRate(), 4) + "fps", 10, 20);
-            ofDrawBitmapString("particle num = " + ofToString(vboPartciles->numParticles) + "\nPredictive Tracking " + (oculusRift.getUsePredictiveOrientation() ? "YES" : "NO"), 10, 35);
-            ofDrawBitmapString("[f] key : toggle fullscreen", 10, 60);
-            if (show_port) {
-                string buf;
-                buf = "listening for osc messages on port" + ofToString(osc_port);
-                ofDrawBitmapString(buf, 10, 80);
-            }
-            
-            ofSetColor(0, 255, 0);
-            ofNoFill();
-            ofCircle(overlayRect.getCenter(), 20);
-            
-            ofPopStyle();
-            oculusRift.endOverlay();
-        }
-        
-        ofSetColor(255);
-        glEnable(GL_DEPTH_TEST);
-        
-        
-        oculusRift.beginLeftEye();
-        drawScene();
-        oculusRift.endLeftEye();
-        
-        oculusRift.beginRightEye();
-        drawScene();
-        oculusRift.endRightEye();
-        
-        oculusRift.draw();
-        
-        glDisable(GL_DEPTH_TEST);
-    }
-    else{
-        cam.begin();
-        drawScene();
-        cam.end();
-    }
+    //oculusRift.worldToScreen(ofVec3f(), true);
     
 }
 
@@ -240,11 +180,43 @@ void ofApp::drawScene()
     
     if (show_particle)
     {
+        
+        for (int i = 0; i < particleTiles.size(); i++)
+        {
+            int numTiles = particleTiles.size();
+            float angleStep = 180/numTiles;
+            
+            float angle = angleStep * i;
+            float posX = -(1.5 * tileWidth * numTiles)/2 + 1.5 * tileWidth * i;
+            ofVec3f pos(sin(i*PI/numTiles)*distanceTiles, 0.0, cos(i*PI/numTiles)*distanceTiles);
+            
+            ofPushMatrix();
+            ofRotateY(90+angleStep/2);
+            ofPushMatrix();
+            ofTranslate(pos);
+            ofRotateY(angle);
+            particleTiles[i]->draw();
+            ofPopMatrix();
+            ofPopMatrix();
+        }
+        
         //cam.begin();
         //ofRotate(ofGetElapsedTimef() * 20, 1, 1, 0);
         
+        /*
         // draw particles
-        vboPartciles->draw();
+        ofPushMatrix();
+        ofRotate(45, 0, 1, 0);
+        ofTranslate(-300, 0);
+        vboParticles->draw();
+        ofPopMatrix();
+        ofPushMatrix();
+        ofRotate(-45, 0, 1, 0);
+        ofTranslate(300, 0);
+        vboParticles->draw();
+        ofPopMatrix();
+        
+        */
         
         //cam.end();
     }
@@ -262,6 +234,65 @@ void ofApp::drawScene()
     
     ofPopStyle();
     
+}
+
+//--------------------------------------------------------------
+void ofApp::draw()
+{
+    if(oculusRift.isSetup()){
+        
+        if(showOverlay){
+            
+            oculusRift.beginOverlay(-230, 320,240);
+            ofRectangle overlayRect = oculusRift.getOverlayRectangle();
+            
+            ofPushStyle();
+            ofEnableAlphaBlending();
+            ofFill();
+            ofSetColor(255, 40, 10, 200);
+            
+            ofRect(overlayRect);
+            
+            ofSetColor(255,255);
+            ofFill();
+            ofDrawBitmapString(ofToString(ofGetFrameRate(), 4) + "fps", 10, 20);
+            ofDrawBitmapString("particle num = " + ofToString(vboParticles->numParticles) + "\nPredictive Tracking " + (oculusRift.getUsePredictiveOrientation() ? "YES" : "NO"), 10, 35);
+            ofDrawBitmapString("[f] key : toggle fullscreen", 10, 60);
+            if (show_port) {
+                string buf;
+                buf = "listening for osc messages on port" + ofToString(osc_port);
+                ofDrawBitmapString(buf, 10, 80);
+            }
+            
+            ofSetColor(0, 255, 0);
+            ofNoFill();
+            ofCircle(overlayRect.getCenter(), 20);
+            
+            ofPopStyle();
+            oculusRift.endOverlay();
+        }
+        
+        ofSetColor(255);
+        glEnable(GL_DEPTH_TEST);
+        
+        oculusRift.beginLeftEye();
+        drawScene();
+        oculusRift.endLeftEye();
+        
+        oculusRift.beginRightEye();
+        drawScene();
+        oculusRift.endRightEye();
+        
+        oculusRift.draw();
+        
+        glDisable(GL_DEPTH_TEST);
+        
+    }
+    else{
+        cam.begin();
+        drawScene();
+        cam.end();
+    }
 }
 
 //--------------------------------------------------------------
@@ -364,3 +395,11 @@ void ofApp::dragEvent(ofDragInfo dragInfo)
 {
     
 }
+
+/*
+ 
+ ParticleTile::ParticleTile(int _x, int _y, int _z, int _maxP, int _sizeP)
+ : x(_x), y(_y), z(_z), maxParticles(_maxP), particleSize(_sizeP)
+ {
+ }
+ */
