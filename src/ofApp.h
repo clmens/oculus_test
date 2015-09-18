@@ -44,10 +44,7 @@ public:
     
     bool show_particle;
     bool color_on;
-    bool show_grid;
     bool show_port;
-    
-    int osc_port;
     
     ofVec3f cursor2D;
     ofVec3f cursor3D;
@@ -62,11 +59,10 @@ public:
     vector<float> sensorReading;
     
     //particle
-    //void generate_particle_tiles();
-    void spawn_particles(float reading, ofColor color, ofxVboParticles *particleTile);
     ofxVboParticles *vboParticles;
-    
     vector<ofxVboParticles*> particleTiles;
+    void spawn_particles(float reading, ofColor color, ofxVboParticles *particleTile);
+
     float tileWidth, tileHeight;
     float arcAngle;
     float distanceTiles;
@@ -75,58 +71,7 @@ public:
     float particleSpeed;
     
     //osc
-    ofTrueTypeFont font;
-    ofxOscReceiver receiver;
-    
-    float parseMessage(ofxOscMessage & msg);
-    
-    
-    int current_msg_string;
-    
+    ofxOscReceiver receiver;    
     void get_osc_messages();
+    int osc_port;
 };
-/*
-class ParticleTile
-{
-    ParticleTile(ofVec3f pos, int width, int height, int maxParticles, int particleSize);
-    ofVec3f tilePos;
-    int width, height;
-    int maxParticles, particleSize;
-    
-    void update();
-    void draw();
-    
-    ofxVboParticles *vboParticles;
-};
-*/
-/*
-class Sensor
-{
-public:
-    Sensor();
-    void update();
-    
-    void spawnParticles();
-    
-    ofxVboParticles *vboParticles;
-    float reading;
-};
-
-class PythonEEGReceiver
-{
-public:
-    PythonEEGReceiver(int port, vector<Sensor> sensor_list);
-    
-    int port;
-    ofxOscReceiver receiver;
-    void parseMessage();
-    vector<Sensor> sensors;
-    
-    vector<String> sensor_list;
-    
-};
-
-vector<String> sensors{"AF3", "EF"};
-PythonEEGReceiver epoc(57100, sensors);
-epoc.parseMessage();
-*/
