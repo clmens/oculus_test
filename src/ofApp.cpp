@@ -46,7 +46,7 @@ void ofApp::setup()
     arcAngle = 180.0;
     distanceTiles= 600.0;
     
-    particleSpread = 5.0;
+    particleSpread = 2.0;
     particleSpeed = 10.0;
 
     ofLog()<<"sensorList size:"<< sensorList.size();
@@ -67,8 +67,9 @@ void ofApp::setup()
     current_msg_string = 0;
     
     //enable mouse;
-    //cam.begin();
-    //cam.end();
+    cam.begin();
+    cam.end();
+    
 }
 
 float ofApp::parseMessage(ofxOscMessage &msg)
@@ -123,13 +124,16 @@ void ofApp::get_osc_messages()
 
 void ofApp::spawn_particles(float reading, ofColor color, ofxVboParticles *particleTile)
 {
+    //mapping Sensorreadings to Spawningpoint in VR
+    float y = ofMap(reading, 0.0, 800.0, -tileHeight, tileHeight);
+    ofVec3f position;
+    ofVec3f velocity;
+
     int numParticlesSpawned = 10;
     for (int i = 0; i < numParticlesSpawned; i++)
     {
-        //mapping Sensorreadings to Spawningpoint in VR
-        float y = ofMap(reading, 0.0, 800.0, -tileHeight, tileHeight);
-        ofVec3f position = ofVec3f(ofRandom(-tileWidth, tileWidth), y, 0.0);
-        ofVec3f velocity = ofVec3f(ofRandom(-particleSpread, -particleSpread), 0, particleSpeed);
+        position = ofVec3f(ofRandom(-tileWidth, tileWidth), y, 0.0);
+        velocity = ofVec3f(ofRandom(-particleSpread, particleSpread), 0, particleSpeed);
         // add a particle
         particleTile->addParticle(position, velocity, color);
     }
@@ -139,10 +143,10 @@ void ofApp::spawn_particles(float reading, ofColor color, ofxVboParticles *parti
 //--------------------------------------------------------------
 void ofApp::update()
 {
+    
     for (int i = 0; i < sensorList.size(); i++)
     {
         sensorReading[i] = ofRandom(800.0);
-        //ofLog()<<"Sensor"<<i<<":"<< sensorReading[i];
     }
     
     //particle
@@ -160,15 +164,16 @@ void ofApp::update()
         tile->update();
     }
     
-    //vboPartciles->update();
-    //magically enable mouserotation
-    //oculusRift.worldToScreen(ofVec3f(), true);
+    
+    //set cameraposition to 0,0,0
+    cam.setPosition(ofVec3f());
     
 }
 
 //--------------------------------------------------------------
 void ofApp::drawScene()
 {
+    
     if(show_grid)
     {
         ofPushMatrix();
@@ -191,7 +196,7 @@ void ofApp::drawScene()
             float angleStep = arcAngle/numTiles;
             
             float angle = angleStep * i;
-            //float posX = -(1.5 * tileWidth * numTiles)/2 + 1.5 * tileWidth * i;
+            //create position in arc
             ofVec3f pos(sin(i*ofDegToRad(angleStep))*distanceTiles, 0.0, cos(i*ofDegToRad(angleStep))*distanceTiles);
             
             ofPushMatrix();
@@ -268,6 +273,7 @@ void ofApp::draw()
                 buf = "listening for osc messages on port" + ofToString(osc_port);
                 ofDrawBitmapString(buf, 10, 80);
             }
+            ofDrawBitmapString( "Camposition:" + ofToString(cam.getPosition()), 10, 100);
             
             ofSetColor(0, 255, 0);
             ofNoFill();

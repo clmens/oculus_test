@@ -16,7 +16,7 @@ ofxVboParticles::ofxVboParticles(int _maxParticles, float _pointSize){
     
     positions = boost::circular_buffer<ofVec3f>(maxParticles);
     velocitys = boost::circular_buffer<ofVec3f>(maxParticles);
-    forces = boost::circular_buffer<ofVec3f>(maxParticles);
+    //forces = boost::circular_buffer<ofVec3f>(maxParticles);
     colors = boost::circular_buffer<ofColor>(maxParticles);
     
     static GLfloat distance[] = { 0.0, 0.0, 1.0 };
@@ -33,15 +33,14 @@ ofxVboParticles::ofxVboParticles(int _maxParticles, float _pointSize){
 }
 
 void ofxVboParticles::update(){
-    
-    float tmp;
-    
+        
     for(int i = 0; i < positions.size(); i++){
-        forces[i] = ofVec3f(0, 0, 0);
-        forces[i] -= velocitys[i] * friction;
-        velocitys[i] += forces[i];
+        //forces[i] = ofVec3f(0, 0, 0);
+        //forces[i] -= velocitys[i] * friction;
+        //velocitys[i] += forces[i];
         positions[i] += velocitys[i];
-        colors[i].setBrightness(colors[i].getBrightness()*fade);
+        //colors[i].setBrightness(colors[i].getBrightness()*fade);
+        colors[i].a = colors[i].a * fade;
         billboards.getVertices()[i].set(positions[i].x, positions[i].y, positions[i].z);
         billboards.getColors()[i].set(colors[i]);
     }
@@ -51,6 +50,7 @@ void ofxVboParticles::update(){
 void ofxVboParticles::draw(){
     ofPushStyle();
     ofEnableDepthTest();
+    //glDepthFunc(GL_NEVER);
     ofEnablePointSprites();
     billboards.draw();
     ofDisablePointSprites();
@@ -61,27 +61,11 @@ void ofxVboParticles::addParticle(ofVec3f _position, ofVec3f _velocity, ofColor 
     positions.push_back(_position);
     velocitys.push_back(_velocity);
     colors.push_back(_color);
-    forces.push_back(ofVec3f(0, 0, 0));
+    //forces.push_back(ofVec3f(0, 0, 0));
     
     billboards.getVertices()[numParticles].set(positions[numParticles].x, positions[numParticles].y, positions[numParticles].z);
     billboards.getColors()[numParticles].set(colors[numParticles]);
     
     if(positions.size() != maxParticles) numParticles++;
-    
-    /*
-     numParticles++;
-     if (positions.size() > maxParticles) {
-     positions.pop_front();
-     colors.pop_front();
-     velocitys.pop_front();
-     forces.pop_front();
-     for (int i = 0; i < numParticles-1; i++) {
-     //billboards.getVertices()[i] = billboards.getVertices()[i + 1];
-     billboards.getColors()[i] = billboards.getColors()[i + 1];
-     }
-     
-     numParticles--;
-     }
-     */
     
 }

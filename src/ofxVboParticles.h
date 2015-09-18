@@ -25,11 +25,9 @@ public:
     
     boost::circular_buffer<ofVec3f> positions;
     boost::circular_buffer<ofVec3f> velocitys;
-    boost::circular_buffer<ofVec3f> forces;
+    //boost::circular_buffer<ofVec3f> forces;
     boost::circular_buffer<ofColor> colors;
     
-    ofFloatColor alpha;
-
     float friction;
     float fade;
     
