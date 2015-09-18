@@ -45,7 +45,7 @@ void ofApp::setup()
     //attributes of Particletiles
     tileWidth = 400.0;
     tileHeight = 600.0;
-    arcAngle = 180.0;
+    arcAngle = 120.0;
     distanceTiles= 600.0;
     //particle attributes
     particleSpread = 2.0;
@@ -54,6 +54,7 @@ void ofApp::setup()
     ofLog()<<"sensorList size:"<< sensorList.size();
     ofLog()<<"particleTiles size:"<< particleTiles.size();
     
+    render_oculus = false;
     show_particle = true;
     color_on = true;
     show_port = true;
@@ -187,7 +188,7 @@ void ofApp::drawScene()
 //--------------------------------------------------------------
 void ofApp::draw()
 {
-    if(oculusRift.isSetup()){
+    if(render_oculus && oculusRift.isSetup()){
         
         if(showOverlay){
             

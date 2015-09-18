@@ -42,6 +42,8 @@ public:
     bool showOverlay;
     bool predictive;
     
+    bool render_oculus;
+    
     bool show_particle;
     bool color_on;
     bool show_port;
