@@ -28,13 +28,30 @@ void ofApp::setup()
     
     //define Epoc Sensors
     sensorList = {"/AF3", "/AF4", "/F3", "/F4", "/F7", "/F8"};
+    
+    //define min and max inputvalues
+    readingMin = 0;
+    readingMax = 1050.0;
+    
     //initialize array of Sensorvalues
     sensorReading = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+    
+    //start Colors for Sensors
+    startColors = {ofColor(200, 50, 200), ofColor(200, 50, 200), ofColor(200, 50, 200),
+        ofColor(200, 50, 200), ofColor(200, 50, 200), ofColor(200, 50, 200)};
+    //end Colors for sensors;
+    endColors = {ofColor(0, 50, 200), ofColor(0, 50, 200), ofColor(0, 50, 200),
+        ofColor(0, 50, 200), ofColor(0, 50, 200), ofColor(0, 50, 200)};
+    
+    
+    colorStart.set(200, 50, 200);
+    colorEnd.set( 0, 50, 200);
+    
     
     //setup Particletiles depending on entries in sensorList
     for (int i = 0; i < sensorList.size(); i++)
     {
-        vboParticles = new ofxVboParticles(10000, 5000);
+        vboParticles = new ofxVboParticles(10000, 4000);
         //friction is not used
         //vboParticles->friction = 0.00;
         //fadoutspeed of particles
@@ -49,8 +66,8 @@ void ofApp::setup()
     distanceTiles= 600.0;
     //particle attributes
     particleSpread = 2.0;
-    particleSpeed = 10.0;
-
+    particleSpeed = 5.0;
+    
     ofLog()<<"sensorList size:"<< sensorList.size();
     ofLog()<<"particleTiles size:"<< particleTiles.size();
     
@@ -75,7 +92,7 @@ void ofApp::setup()
 
 void ofApp::get_osc_messages()
 {
-  
+    
     //check for waiting messages
     while (receiver.hasWaitingMessages()){
         // get the next message
@@ -93,16 +110,18 @@ void ofApp::get_osc_messages()
             }
         }
     }
-
+    
 }
 
 void ofApp::spawn_particles(float reading, ofColor color, ofxVboParticles *particleTile)
 {
     //mapping Sensorreadings to Spawningpoint in VR
-    float y = ofMap(reading, 0.0, 800.0, -tileHeight, tileHeight);
+    float normalize = ofMap(reading, readingMin, readingMax, 0.0, 1.0);
+    float y = tileHeight * normalize - tileHeight/2;
     ofVec3f position;
     ofVec3f velocity;
-
+    color = colorStart.getLerped(colorEnd, normalize);
+    
     int numParticlesSpawned = 10;
     for (int i = 0; i < numParticlesSpawned; i++)
     {
@@ -113,6 +132,31 @@ void ofApp::spawn_particles(float reading, ofColor color, ofxVboParticles *parti
     }
 }
 
+void ofApp::spawn_particles()
+{
+    for(int i = 0; i < particleTiles.size(); i++)
+    {
+        //update all particles
+        particleTiles[i]->update();
+        
+        //mapping Sensorreadings to Spawningpoint in VR
+        float normalize = ofMap(sensorReading[i], readingMin, readingMax, 0.0, 1.0);
+        float y = tileHeight * normalize - tileHeight/2;
+        ofVec3f position;
+        ofVec3f velocity;
+        ofColor color(startColors[i].getLerped(endColors[i], normalize));
+        
+        int numParticlesSpawned = 10;
+        for (int j = 0; j < numParticlesSpawned; j++)
+        {
+            position = ofVec3f(ofRandom(-tileWidth, tileWidth), y, 0.0);
+            velocity = ofVec3f(ofRandom(-particleSpread, particleSpread), 0, particleSpeed);
+            // add a particle
+            particleTiles[i]->addParticle(position, velocity, color);
+        }
+    }
+    
+}
 
 //--------------------------------------------------------------
 void ofApp::update()
@@ -121,18 +165,8 @@ void ofApp::update()
     get_osc_messages();
     
     //particle
-    for (int i = 0; i < particleTiles.size(); i++)
-    {
-        ofColor color(255,0,255);
-        color.setHue((255/particleTiles.size())*i);
-        if(!color_on) color.setSaturation(0);
-        spawn_particles(sensorReading[i], color, particleTiles[i]);
-    }
-
-    for( auto tile: particleTiles)
-    {
-        tile->update();
-    }
+    spawn_particles();
+    
     
     //set cameraposition to 0,0,0
     cam.setPosition(ofVec3f());
@@ -167,7 +201,7 @@ void ofApp::drawScene()
             ofPopMatrix();
             ofPopMatrix();
         }
-
+        
     }
     
     //billboard and draw the mouse
@@ -180,7 +214,6 @@ void ofApp::drawScene()
         ofPopMatrix();
         
     }
-    
     ofPopStyle();
     
 }
@@ -196,7 +229,7 @@ void ofApp::draw()
             ofRectangle overlayRect = oculusRift.getOverlayRectangle();
             
             ofPushStyle();
-            ofEnableAlphaBlending();
+            //ofEnableAlphaBlending();
             ofFill();
             ofSetColor(255, 40, 10, 200);
             

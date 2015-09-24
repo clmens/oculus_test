@@ -57,13 +57,20 @@ public:
     ofVec3f cursorGaze;
     
     //sensor
+    float readingMin;
+    float readingMax;
     vector<string> sensorList;
     vector<float> sensorReading;
+    vector<ofColor> startColors;
+    vector<ofColor> endColors;
+    ofColor colorStart;
+    ofColor colorEnd;
     
     //particle
     ofxVboParticles *vboParticles;
     vector<ofxVboParticles*> particleTiles;
     void spawn_particles(float reading, ofColor color, ofxVboParticles *particleTile);
+    void spawn_particles();
 
     float tileWidth, tileHeight;
     float arcAngle;
