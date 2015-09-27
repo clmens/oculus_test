@@ -17,6 +17,7 @@ public:
     void addParticle(ofVec3f position = ofVec3f(0, 0, 0),
                      ofVec3f velocity = ofVec3f(0, 0, 0),
                      ofColor color = 0xffffff);
+    void reset();
     
     int maxParticles;
     float pointSize;

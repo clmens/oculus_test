@@ -71,6 +71,8 @@ public:
     vector<ofxVboParticles*> particleTiles;
     void spawn_particles(float reading, ofColor color, ofxVboParticles *particleTile);
     void spawn_particles();
+    
+    int numParticlesSpawned;
 
     float tileWidth, tileHeight;
     float arcAngle;
@@ -83,4 +85,10 @@ public:
     ofxOscReceiver receiver;    
     void get_osc_messages();
     int osc_port;
+    
+    //cam
+    
+    int rotX;
+    int posY, posZ;
+    
 };

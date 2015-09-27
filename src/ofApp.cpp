@@ -27,21 +27,21 @@ void ofApp::setup()
     ofHideCursor();
     
     //define Epoc Sensors
-    sensorList = {"/AF3", "/AF4", "/F3", "/F4", "/F7", "/F8"};
+    sensorList = {"/AF3", "/F7", "/F4","/F3", "/F8", "/AF4"};
     
     //define min and max inputvalues
-    readingMin = 0;
-    readingMax = 1050.0;
+    readingMin = 10.0;
+    readingMax = 75.0;
     
     //initialize array of Sensorvalues
     sensorReading = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
     
     //start Colors for Sensors
-    startColors = {ofColor(200, 50, 200), ofColor(200, 50, 200), ofColor(200, 50, 200),
-        ofColor(200, 50, 200), ofColor(200, 50, 200), ofColor(200, 50, 200)};
+    startColors = {ofColor(0, 0, 200), ofColor(170, 50, 170), ofColor(200, 200, 200),
+        ofColor(200, 200, 200), ofColor(170, 50, 170), ofColor(0, 0, 200)};
     //end Colors for sensors;
-    endColors = {ofColor(0, 50, 200), ofColor(0, 50, 200), ofColor(0, 50, 200),
-        ofColor(0, 50, 200), ofColor(0, 50, 200), ofColor(0, 50, 200)};
+    endColors = {ofColor(0, 0, 200), ofColor(200, 0, 200), ofColor(200, 200, 200),
+        ofColor(200, 200, 200), ofColor(200, 0, 200), ofColor(0, 0, 200)};
     
     
     colorStart.set(200, 50, 200);
@@ -51,31 +51,38 @@ void ofApp::setup()
     //setup Particletiles depending on entries in sensorList
     for (int i = 0; i < sensorList.size(); i++)
     {
-        vboParticles = new ofxVboParticles(10000, 4000);
+        vboParticles = new ofxVboParticles(5000, 2000);
         //friction is not used
         //vboParticles->friction = 0.00;
         //fadoutspeed of particles
-        vboParticles->fade = 0.99;
+        vboParticles->fade = 0.001;
         particleTiles.push_back(vboParticles);
     }
     
     //attributes of Particletiles
-    tileWidth = 400.0;
-    tileHeight = 600.0;
-    arcAngle = 120.0;
-    distanceTiles= 600.0;
+    numParticlesSpawned = 8;
+    
+    tileWidth = 60.0;
+    tileHeight = 500.0;
+    arcAngle = 40.0;
+    distanceTiles= 600;
     //particle attributes
-    particleSpread = 2.0;
-    particleSpeed = 5.0;
+    particleSpread = 0.5;
+    particleSpeed = 3;
+    
+    //cam
+    rotX = 0;
+    posY = -80;
+    posZ = -260;
     
     ofLog()<<"sensorList size:"<< sensorList.size();
     ofLog()<<"particleTiles size:"<< particleTiles.size();
     
-    render_oculus = false;
+    render_oculus = true;
     show_particle = true;
     color_on = true;
     show_port = true;
-    osc_port = 57120;
+    osc_port = 57140;
     
     showOverlay = false;
     predictive = true;
@@ -136,6 +143,7 @@ void ofApp::spawn_particles()
 {
     for(int i = 0; i < particleTiles.size(); i++)
     {
+        
         //update all particles
         particleTiles[i]->update();
         
@@ -145,11 +153,14 @@ void ofApp::spawn_particles()
         ofVec3f position;
         ofVec3f velocity;
         ofColor color(startColors[i].getLerped(endColors[i], normalize));
+        color.setBrightness(color.getBrightness() + ofRandom(-20, 50));
         
-        int numParticlesSpawned = 10;
+        //ofLog() << "Sensor"+ofToString(i)+" :"+ofToString(sensorReading[i]);
+        
         for (int j = 0; j < numParticlesSpawned; j++)
         {
-            position = ofVec3f(ofRandom(-tileWidth, tileWidth), y, 0.0);
+            ofVec3f oldPosition = position;
+            position = ofVec3f(ofRandom(-tileWidth, tileWidth), ofRandom(-2,2)+y, 0.0);
             velocity = ofVec3f(ofRandom(-particleSpread, particleSpread), 0, particleSpeed);
             // add a particle
             particleTiles[i]->addParticle(position, velocity, color);
@@ -162,14 +173,21 @@ void ofApp::spawn_particles()
 void ofApp::update()
 {
     //osc
-    get_osc_messages();
+    if(true) get_osc_messages();
+    else
+        for (int i = 0; i < sensorReading.size(); i++)
+        {
+            sensorReading[i] = ofRandom(readingMin, readingMax);
+        }
     
     //particle
     spawn_particles();
     
     
     //set cameraposition to 0,0,0
-    cam.setPosition(ofVec3f());
+    cam.setPosition(ofVec3f(0, 0, posZ));
+    
+    ofLog() << "posZ: "+ofToString(posZ)+" posY: "+ofToString(posY)+" rotX: "+ofToString(rotX)+" tileWidth: "+ofToString(tileWidth)+" tileHeight: "+ofToString(tileHeight);
     
 }
 
@@ -189,9 +207,10 @@ void ofApp::drawScene()
             
             float angle = angleStep * i;
             //create position in arc
-            ofVec3f pos(sin(i*ofDegToRad(angleStep))*distanceTiles, 0.0, cos(i*ofDegToRad(angleStep))*distanceTiles);
+            ofVec3f pos(sin(i*ofDegToRad(angleStep))*distanceTiles, posY, cos(i*ofDegToRad(angleStep))*distanceTiles);
             
             ofPushMatrix();
+            ofRotateX(rotX);
             //look into the arc
             ofRotateY(180-arcAngle/2+angleStep/2);
             ofPushMatrix();
@@ -209,7 +228,7 @@ void ofApp::drawScene()
         
         ofPushMatrix();
         oculusRift.multBillboardMatrix();
-        ofSetColor(255, 0, 0);
+        ofSetColor(200, 0, 0);
         ofCircle(0,0,.5);
         ofPopMatrix();
         
@@ -302,14 +321,18 @@ void ofApp::keyPressed(int key)
     }
     
     if(key == 'l'){
-        oculusRift.lockView = !oculusRift.lockView;
+        //oculusRift.lockView = !oculusRift.lockView;
     }
     
     if(key == 'o'){
-        showOverlay = !showOverlay;
+        //showOverlay = !showOverlay;
     }
     if(key == 'r'){
         oculusRift.reset();
+        for (int i = 0; i < particleTiles.size(); i++)
+        {
+            particleTiles[i]->reset();
+        }
         
     }
     if(key == 'h'){
@@ -327,6 +350,16 @@ void ofApp::keyPressed(int key)
     {
         show_particle= !show_particle;
     }
+    if(key == '+') rotX +=1;
+    if(key == '#') rotX -=1;
+    if(key == 'o') posY +=5;
+    if(key == 'l') posY -=5;
+    if(key == 'O') posZ +=5;
+    if(key == 'L') posZ -=5;
+    if(key == 'i') tileWidth+=5;
+    if(key == 'k') tileWidth-=5;
+    if(key == 'I') tileHeight+=5;
+    if(key == 'K') tileHeight-=5;
 }
 
 //--------------------------------------------------------------
